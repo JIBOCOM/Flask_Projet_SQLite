@@ -29,7 +29,7 @@ def lecture():
 def authentification():
     if request.method == 'POST':
         # Vérifier les identifiants
-        if request.form['username'] == 'admin' and request.form['password'] == 'password': # password à cacher par la suite
+        if request.form['username'] == 'user' and request.form['password'] == '12345': # password à cacher par la suite
             session['authentifie'] = True
             # Rediriger vers la route lecture après une authentification réussie
             return redirect(url_for('lecture'))
