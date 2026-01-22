@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Liste des tâches</title>
+</head>
+<body>
+    <h1>Liste des tâches</h1>
+    <ul>
+        {% for t in tasks %}
+            <li>{{ t.id }} - {{ t.title }} (terminée = {{ t.completed }})</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
