@@ -2,10 +2,14 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Test Home</title>
+    <title>Mini gestionnaire de tâches</title>
 </head>
 <body>
-    <h1>Home OK</h1>
-    <a href="/tasks">Voir les tâches</a>
+    <h1>Mini gestionnaire de tâches</h1>
+    <p>Bienvenue sur votre application de gestion de tâches.</p>
+    <ul>
+        <li><a href="{{ url_for('list_tasks') }}">Voir la liste des tâches</a></li>
+        <li><a href="{{ url_for('add_task') }}">Ajouter une nouvelle tâche</a></li>
+    </ul>
 </body>
 </html>
