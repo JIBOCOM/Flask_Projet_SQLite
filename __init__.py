@@ -1,81 +1,112 @@
-from flask import Flask, render_template_string, render_template, jsonify, request, redirect, url_for, session
-from flask import render_template
-from flask import json
-from urllib.request import urlopen
-from werkzeug.utils import secure_filename
+from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
+import os
 
-app = Flask(__name__)                                                                                                                  
-app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'  # Clé secrète pour les sessions
+app = Flask(__name__)
 
-# Fonction pour créer une clé "authentifie" dans la session utilisateur
-def est_authentifie():
-    return session.get('authentifie')
+# ---------- Fonctions utilitaires BDD ----------
 
-@app.route('/')
-def hello_world():
-    return render_template('hello.html')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "database.db")
 
-@app.route('/lecture')
-def lecture():
-    if not est_authentifie():
-        # Rediriger vers la page d'authentification si l'utilisateur n'est pas authentifié
-        return redirect(url_for('authentification'))
 
-  # Si l'utilisateur est authentifié
-    return "<h2>Bravo, vous êtes authentifié</h2>"
+def get_db_connection():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-@app.route('/authentification', methods=['GET', 'POST'])
-def authentification():
-    if request.method == 'POST':
-        # Vérifier les identifiants
-        if request.form['username'] == 'user' and request.form['password'] == '12345': # password à cacher par la suite
-            session['authentifie'] = True
-            # Rediriger vers la route lecture après une authentification réussie
-            return redirect(url_for('lecture'))
-        else:
-            # Afficher un message d'erreur si les identifiants sont incorrects
-            return render_template('formulaire_authentification.html', error=True)
 
-    return render_template('formulaire_authentification.html', error=False)
+# ---------- Routes principales ----------
 
-@app.route('/fiche_client/<int:post_id>')
-def Readfiche(post_id):
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM clients WHERE id = ?', (post_id,))
-    data = cursor.fetchall()
+@app.route("/")
+def home():
+    """
+    Page d'accueil : lien vers la liste et vers l'ajout de tâches
+    """
+    return render_template("home.html")
+
+
+@app.route("/tasks")
+def list_tasks():
+    """
+    Afficher toutes les tâches
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM tasks ORDER BY completed, due_date IS NULL, due_date")
+    tasks = cur.fetchall()
     conn.close()
-    # Rendre le template HTML et transmettre les données
-    return render_template('read_data.html', data=data)
+    return render_template("tasks.html", tasks=tasks)
 
-@app.route('/consultation/')
-def ReadBDD():
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM clients;')
-    data = cursor.fetchall()
-    conn.close()
-    return render_template('read_data.html', data=data)
 
-@app.route('/enregistrer_client', methods=['GET'])
-def formulaire_client():
-    return render_template('formulaire.html')  # afficher le formulaire
+@app.route("/tasks/add", methods=["GET", "POST"])
+def add_task():
+    """
+    Ajouter une tâche (GET = formulaire, POST = traitement)
+    """
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        description = request.form.get("description", "").strip()
+        due_date = request.form.get("due_date") or None  # peut être vide
 
-@app.route('/enregistrer_client', methods=['POST'])
-def enregistrer_client():
-    nom = request.form['nom']
-    prenom = request.form['prenom']
+        if title:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO tasks (title, description, due_date, completed) VALUES (?, ?, ?, ?)",
+                (title, description, due_date, 0),
+            )
+            conn.commit()
+            conn.close()
+            return redirect(url_for("list_tasks"))
+        # si pas de titre, on réaffiche le formulaire avec un message simple
+        error = "Le titre est obligatoire."
+        return render_template("add_task.html", error=error)
 
-    # Connexion à la base de données
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
+    return render_template("add_task.html")
 
-    # Exécution de la requête SQL pour insérer un nouveau client
-    cursor.execute('INSERT INTO clients (created, nom, prenom, adresse) VALUES (?, ?, ?, ?)', (1002938, nom, prenom, "ICI"))
+
+@app.route("/tasks/<int:task_id>/delete", methods=["POST"])
+def delete_task(task_id):
+    """
+    Supprimer une tâche
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
     conn.commit()
     conn.close()
-    return redirect('/consultation/')  # Rediriger vers la page d'accueil après l'enregistrement
-                                                                                                                                       
+    return redirect(url_for("list_tasks"))
+
+
+@app.route("/tasks/<int:task_id>/done", methods=["POST"])
+def mark_task_done(task_id):
+    """
+    Marquer une tâche comme terminée
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE tasks SET completed = 1 WHERE id = ?", (task_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("list_tasks"))
+
+
+# ---------- Route de debug (optionnelle) ----------
+
+@app.route("/debug/tasks")
+def debug_tasks():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM tasks")
+    tasks = cur.fetchall()
+    conn.close()
+    return "<br>".join(
+        [f"{t['id']} - {t['title']} - terminé={t['completed']}" for t in tasks]
+    )
+
+
+# ---------- Lancement local ----------
+
 if __name__ == "__main__":
-  app.run(debug=True)
+    app.run(debug=True)
