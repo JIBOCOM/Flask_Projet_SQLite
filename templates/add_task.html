@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ajouter une tâche</title>
+</head>
+<body>
+    <h1>Ajouter une nouvelle tâche</h1>
+
+    <p><a href="{{ url_for('home') }}">Accueil</a> | 
+       <a href="{{ url_for('list_tasks') }}">Voir la liste des tâches</a></p>
+
+    {% if error %}
+        <p style="color:red;">{{ error }}</p>
+    {% endif %}
+
+    <form action="{{ url_for('add_task') }}" method="post">
+        <p>
+            <label for="title">Titre :</label><br>
+            <input type="text" id="title" name="title" required>
+        </p>
+        <p>
+            <label for="description">Description :</label><br>
+            <textarea id="description" name="description" rows="4" cols="40"></textarea>
+        </p>
+        <p>
+            <label for="due_date">Date d'échéance :</label><br>
+            <input type="date" id="due_date" name="due_date">
+        </p>
+        <p>
+            <button type="submit">Enregistrer la tâche</button>
+        </p>
+    </form>
+</body>
+</html>
