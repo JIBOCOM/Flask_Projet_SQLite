@@ -6,10 +6,42 @@
 </head>
 <body>
     <h1>Liste des tâches</h1>
-    <ul>
-        {% for t in tasks %}
-            <li>{{ t.id }} - {{ t.title }} (terminée = {{ t.completed }})</li>
-        {% endfor %}
-    </ul>
+
+    <p><a href="{{ url_for('home') }}">Accueil</a> | 
+       <a href="{{ url_for('add_task') }}">Ajouter une tâche</a></p>
+
+    {% if tasks %}
+        <table border="1" cellpadding="6">
+            <tr>
+                <th>ID</th>
+                <th>Titre</th>
+                <th>Description</th>
+                <th>Date d'échéance</th>
+                <th>Terminée</th>
+                <th>Actions</th>
+            </tr>
+            {% for t in tasks %}
+            <tr>
+                <td>{{ t.id }}</td>
+                <td>{{ t.title }}</td>
+                <td>{{ t.description }}</td>
+                <td>{{ t.due_date or '—' }}</td>
+                <td>{{ 'Oui' if t.completed else 'Non' }}</td>
+                <td>
+                    {% if not t.completed %}
+                    <form action="{{ url_for('mark_task_done', task_id=t.id) }}" method="post" style="display:inline;">
+                        <button type="submit">Terminer</button>
+                    </form>
+                    {% endif %}
+                    <form action="{{ url_for('delete_task', task_id=t.id) }}" method="post" style="display:inline;">
+                        <button type="submit">Supprimer</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>Aucune tâche pour le moment.</p>
+    {% endif %}
 </body>
 </html>
